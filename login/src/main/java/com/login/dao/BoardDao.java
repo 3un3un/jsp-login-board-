@@ -9,14 +9,36 @@ import com.login.dto.BoardDto;
 
 public class BoardDao extends DBConnPool{
 	
-	public List<BoardDto> getList(){
+	
+	/**
+	 * 
+	 * 리스트 조회 후 반환
+	 *  + 페이징 처리
+	 */
+	public List<BoardDto> getList(int startNum, int endNum){
 		List<BoardDto> list = new ArrayList<>();
-		String sql = "select num, title, id,\r\n"
-				+ "to_char(postdate, 'yyyy-mm-dd') postdate\r\n"
-				+ "from board";
+//		String sql = "select num, title, id,\r\n"
+//				+ "to_char(postdate, 'yyyy-mm-dd') postdate\r\n"
+//				+ "from board";
+		
+		String sql = "select *\r\n"
+				+ "from (\r\n"
+				+ "    select rownum rnum, b.*\r\n"
+				+ "    from (\r\n"
+				+ "        select *\r\n"
+				+ "        from board\r\n"
+				+ "        order by num desc\r\n"
+				+ "        ) b\r\n"
+				+ "    )\r\n"
+				+ "where rnum between ? and ?";
 		BoardDto dto = null;
 		try {
 			pstmt = con.prepareStatement(sql);
+			
+			// 시작번호 = 끝번호 - (페이지당 게시물 수 - 1)
+			pstmt.setInt(1, startNum);
+			// 끝번호 = 페이지번호 * 페이지당 게시물 수
+			pstmt.setInt(2, endNum);
 			rs = pstmt.executeQuery();
 			
 			while(rs.next()) {
@@ -80,13 +102,14 @@ public class BoardDao extends DBConnPool{
 		
 	}
 	
-	public void deleteOne(String no){
+	public int deleteOne(String no){
+		int res = 0;
 		String sql = "delete from board\r\n"
 				+ "where num = ?";
 		try {
 			pstmt = con.prepareStatement(sql);
 			pstmt.setString(1, no);
-			int res = pstmt.executeUpdate();
+			res = pstmt.executeUpdate();
 			System.out.println("deleteOne에서 " + res +"건 업데이트");
 
 
@@ -94,6 +117,8 @@ public class BoardDao extends DBConnPool{
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		
+		return res;
 		
 	}
 	
